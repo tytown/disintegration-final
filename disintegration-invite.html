@@ -87,7 +87,7 @@
     max-width:36rem;
     height:auto;
     margin:0 auto;
-    animation:glitch 6.5s linear infinite;
+    animation:glitch 17s linear infinite;
   }
   .title text{
     fill:var(--ink);
@@ -96,36 +96,31 @@
   }
   /* per-letter sudden dropouts — staggered so they fire at different moments */
   .title tspan{
-    animation:flicker 5s linear infinite;
+    animation:flicker 11s linear infinite;
   }
-  .title tspan:nth-child(2n){animation-delay:.7s;}
-  .title tspan:nth-child(3n){animation-delay:1.6s;}
-  .title tspan:nth-child(4n){animation-delay:2.4s;}
-  .title tspan:nth-child(5n){animation-delay:3.3s;}
-  .title tspan:nth-child(7n){animation-delay:4.1s;}
+  .title tspan:nth-child(2n){animation-delay:2.3s;}
+  .title tspan:nth-child(3n){animation-delay:5.1s;}
+  .title tspan:nth-child(4n){animation-delay:7.6s;}
+  .title tspan:nth-child(5n){animation-delay:3.4s;}
+  .title tspan:nth-child(7n){animation-delay:9.2s;}
   @keyframes flicker{
+    /* almost always solid — a single, faint, staggered dip per letter */
     0%,100%{opacity:1;}
-    18%{opacity:1;}
-    20%{opacity:.12;}
-    21%{opacity:1;}
-    54%{opacity:1;}
-    55%{opacity:.4;}
-    56%{opacity:1;}
-    78%{opacity:1;}
-    79%{opacity:.06;}
-    80%{opacity:1;}
+    43%{opacity:1;}
+    44%{opacity:.42;}
+    46%{opacity:1;}
   }
-  /* whole-word glitch: long calm, then sudden displaced, sliced bursts */
+  /* whole-word glitch: long calm, then a rare, understated, off-beat stutter */
   @keyframes glitch{
-    0%,69.5%,100%{transform:translateX(0);clip-path:inset(0 0 0 0);}
-    70%{transform:translateX(-4px) skewX(-3deg);clip-path:inset(15% 0 60% 0);}
-    71%{transform:translateX(5px);clip-path:inset(55% 0 12% 0);}
-    72%{transform:translateX(-3px) skewX(2deg);clip-path:inset(38% 0 34% 0);}
-    73.5%{transform:translateX(0);clip-path:inset(0 0 0 0);}
-    89.5%{transform:translateX(0);clip-path:inset(0 0 0 0);}
-    90%{transform:translateX(4px) skewX(3deg);clip-path:inset(8% 0 70% 0);}
-    91%{transform:translateX(-5px);clip-path:inset(62% 0 6% 0);}
-    92%{transform:translateX(0);clip-path:inset(0 0 0 0);}
+    0%,31.9%,100%{transform:translateX(0);clip-path:inset(0 0 0 0);}
+    /* burst 1 — a brief double-stutter ~5.4s in */
+    32%{transform:translateX(-2px);clip-path:inset(44% 0 42% 0);}
+    32.6%{transform:translateX(2px) skewX(1deg);clip-path:inset(20% 0 66% 0);}
+    33.3%{transform:translateX(0);clip-path:inset(0 0 0 0);}
+    /* burst 2 — a single faint slice ~13.3s in, off-rhythm from the first */
+    77.7%{transform:translateX(0);clip-path:inset(0 0 0 0);}
+    78%{transform:translateX(2px);clip-path:inset(58% 0 30% 0);}
+    78.5%{transform:translateX(0);clip-path:inset(0 0 0 0);}
   }
 
   .rule{
@@ -170,7 +165,7 @@
     <div class="for-line">An invitation for</div>
     <div class="name" id="guest">—</div>
 
-    <svg class="title" viewBox="0 0 1400 160" preserveAspectRatio="xMidYMid meet" role="img" aria-label="DISINTEGRATION">
+    <svg class="title" viewBox="0 0 1400 160" preserveAspectRatio="xMidYMid meet" role="img" aria-label="DISINTEGRATION.">
       <text id="title" x="0" y="118" textLength="1400" lengthAdjust="spacing" font-size="110"></text>
     </svg>
 
@@ -197,7 +192,7 @@
   if(place){ document.getElementById('place').textContent = decodeURIComponent(place); }
 
   // animated, fragmenting title — one scalable SVG line, never wraps
-  const word = 'DISINTEGRATION';
+  const word = 'DISINTEGRATION.';
   const t = document.getElementById('title');
   const SVGNS = 'http://www.w3.org/2000/svg';
   [...word].forEach(ch=>{
