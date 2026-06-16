@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DISINTEGRATION</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Cormorant:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#e9e4da;
+    --ink-dim:#8a8579;
+    --ink-faint:#4a4640;
+    --bg:#070707;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Cormorant Garamond',serif;
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+    position:relative;
+  }
+
+  /* layered, breathing texture */
+  .grain{
+    position:fixed;inset:0;z-index:0;pointer-events:none;
+    opacity:.06;mix-blend-mode:screen;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .haze{
+    position:fixed;inset:-20%;z-index:0;pointer-events:none;
+    background:
+      radial-gradient(ellipse 60% 50% at 50% 42%, rgba(40,38,34,.55), transparent 70%),
+      radial-gradient(ellipse 90% 70% at 50% 120%, rgba(20,18,16,.6), transparent 60%);
+    animation:drift 22s ease-in-out infinite alternate;
+  }
+  @keyframes drift{
+    0%{transform:translate(-1.5%, -1%) scale(1.02);}
+    100%{transform:translate(1.5%, 1.5%) scale(1.06);}
+  }
+  .vignette{
+    position:fixed;inset:0;z-index:1;pointer-events:none;
+    box-shadow:inset 0 0 220px 60px rgba(0,0,0,.9);
+  }
+
+  .card{
+    position:relative;z-index:2;
+    text-align:center;
+    padding:3rem 2rem;
+    max-width:560px;
+    opacity:0;
+    animation:rise 2.6s cubic-bezier(.2,.7,.2,1) .3s forwards;
+  }
+  @keyframes rise{
+    from{opacity:0;transform:translateY(14px);filter:blur(6px);}
+    to{opacity:1;transform:translateY(0);filter:blur(0);}
+  }
+
+  .for-line{
+    font-size:.78rem;
+    letter-spacing:.42em;
+    text-transform:uppercase;
+    color:var(--ink-faint);
+    margin-bottom:2.4rem;
+  }
+  .name{
+    font-family:'Cormorant',serif;
+    font-style:italic;
+    font-weight:300;
+    font-size:clamp(2rem,7vw,3rem);
+    color:var(--ink);
+    margin-bottom:3rem;
+    letter-spacing:.01em;
+  }
+
+  .title{
+    font-weight:300;
+    letter-spacing:.5em;
+    font-size:clamp(1.5rem,5.5vw,2.6rem);
+    text-transform:uppercase;
+    color:var(--ink);
+    margin-left:.5em; /* offset the tracking */
+  }
+  .title .frag{
+    display:inline-block;
+    animation:flicker 7s ease-in-out infinite;
+  }
+  .title .frag:nth-child(3n){animation-delay:1.3s;}
+  .title .frag:nth-child(4n){animation-delay:2.6s;}
+  @keyframes flicker{
+    0%,100%{opacity:1;transform:translateY(0);}
+    48%{opacity:1;}
+    52%{opacity:.45;transform:translateY(.5px);}
+    56%{opacity:1;}
+  }
+
+  .rule{
+    width:1px;height:64px;
+    margin:2.6rem auto;
+    background:linear-gradient(to bottom,transparent,var(--ink-faint),transparent);
+  }
+
+  .meta{
+    color:var(--ink-dim);
+    font-size:1.15rem;
+    line-height:2.4;
+    letter-spacing:.12em;
+    font-weight:300;
+  }
+  .meta .label{
+    display:block;
+    font-size:.66rem;
+    letter-spacing:.34em;
+    text-transform:uppercase;
+    color:var(--ink-faint);
+    margin-top:1.6rem;
+    margin-bottom:.2rem;
+  }
+  .meta .label:first-child{margin-top:0;}
+
+  .closing{
+    margin-top:3rem;
+    font-style:italic;
+    font-size:.95rem;
+    color:var(--ink-faint);
+    letter-spacing:.08em;
+  }
+</style>
+</head>
+<body>
+  <div class="haze"></div>
+  <div class="grain"></div>
+  <div class="vignette"></div>
+
+  <div class="card">
+    <div class="for-line">An invitation for</div>
+    <div class="name" id="guest">—</div>
+
+    <div class="title" id="title"></div>
+
+    <div class="rule"></div>
+
+    <div class="meta">
+      <span class="label">When</span>
+      Saturday, the 20th of June
+      <br>Seven o'clock in the evening
+
+      <span class="label">Where</span>
+      <span id="place">[ address line ]</span>
+    </div>
+
+    <div class="closing">The final performance.</div>
+  </div>
+
+<script>
+  // Personalize via ?name=Bella  (and optional ?place=...)
+  const params = new URLSearchParams(window.location.search);
+  const name = params.get('name');
+  const place = params.get('place');
+  document.getElementById('guest').textContent = name ? decodeURIComponent(name) : 'Friend';
+  if(place){ document.getElementById('place').textContent = decodeURIComponent(place); }
+
+  // animated, fragmenting title
+  const word = 'DISINTEGRATION';
+  const t = document.getElementById('title');
+  [...word].forEach(ch=>{
+    const s=document.createElement('span');
+    s.className='frag';
+    s.textContent=ch;
+    t.appendChild(s);
+  });
+</script>
+</body>
+</html>
