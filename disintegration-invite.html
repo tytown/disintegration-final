@@ -10,8 +10,8 @@
 <style>
   :root{
     --ink:#e9e4da;
-    --ink-dim:#8a8579;
-    --ink-faint:#4a4640;
+    --ink-dim:#a7a195;
+    --ink-faint:#8d877b;
     --bg:#070707;
   }
   *{margin:0;padding:0;box-sizing:border-box;}
@@ -54,7 +54,7 @@
     position:relative;z-index:2;
     text-align:center;
     padding:3rem 2rem;
-    max-width:560px;
+    width:min(92vw,660px);
     opacity:0;
     animation:rise 2.6s cubic-bezier(.2,.7,.2,1) .3s forwards;
   }
@@ -80,29 +80,52 @@
     letter-spacing:.01em;
   }
 
-  /* wordmark as a single scalable line — never wraps, fits any width */
+  /* wordmark as a single scalable line — never wraps, big on desktop, smaller on phone */
   .title{
     display:block;
     width:100%;
-    max-width:30rem;
+    max-width:36rem;
     height:auto;
     margin:0 auto;
+    animation:glitch 6.5s linear infinite;
   }
   .title text{
     fill:var(--ink);
     font-family:'Cormorant',serif;
     font-weight:300;
   }
+  /* per-letter sudden dropouts — staggered so they fire at different moments */
   .title tspan{
-    animation:flicker 7s ease-in-out infinite;
+    animation:flicker 5s linear infinite;
   }
-  .title tspan:nth-child(3n){animation-delay:1.3s;}
-  .title tspan:nth-child(4n){animation-delay:2.6s;}
+  .title tspan:nth-child(2n){animation-delay:.7s;}
+  .title tspan:nth-child(3n){animation-delay:1.6s;}
+  .title tspan:nth-child(4n){animation-delay:2.4s;}
+  .title tspan:nth-child(5n){animation-delay:3.3s;}
+  .title tspan:nth-child(7n){animation-delay:4.1s;}
   @keyframes flicker{
     0%,100%{opacity:1;}
-    48%{opacity:1;}
-    52%{opacity:.45;}
+    18%{opacity:1;}
+    20%{opacity:.12;}
+    21%{opacity:1;}
+    54%{opacity:1;}
+    55%{opacity:.4;}
     56%{opacity:1;}
+    78%{opacity:1;}
+    79%{opacity:.06;}
+    80%{opacity:1;}
+  }
+  /* whole-word glitch: long calm, then sudden displaced, sliced bursts */
+  @keyframes glitch{
+    0%,69.5%,100%{transform:translateX(0);clip-path:inset(0 0 0 0);}
+    70%{transform:translateX(-4px) skewX(-3deg);clip-path:inset(15% 0 60% 0);}
+    71%{transform:translateX(5px);clip-path:inset(55% 0 12% 0);}
+    72%{transform:translateX(-3px) skewX(2deg);clip-path:inset(38% 0 34% 0);}
+    73.5%{transform:translateX(0);clip-path:inset(0 0 0 0);}
+    89.5%{transform:translateX(0);clip-path:inset(0 0 0 0);}
+    90%{transform:translateX(4px) skewX(3deg);clip-path:inset(8% 0 70% 0);}
+    91%{transform:translateX(-5px);clip-path:inset(62% 0 6% 0);}
+    92%{transform:translateX(0);clip-path:inset(0 0 0 0);}
   }
 
   .rule{
