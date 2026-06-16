@@ -85,6 +85,27 @@
     50%{opacity:.22;}
   }
 
+  /* disintegration streaks — a field of fine vertical lines, hidden at rest,
+     revealed only as a soft pool around the cursor (pixel-sort / dissolve feel) */
+  .streaks{
+    position:fixed;inset:0;z-index:0;pointer-events:none;
+    opacity:0;
+    transition:opacity 1.4s ease;
+    -webkit-mask-image:radial-gradient(240px 360px at var(--mx,50%) var(--my,38%), #000 0%, rgba(0,0,0,.55) 42%, transparent 72%);
+            mask-image:radial-gradient(240px 360px at var(--mx,50%) var(--my,38%), #000 0%, rgba(0,0,0,.55) 42%, transparent 72%);
+  }
+  .streaks.awake{opacity:.55;}
+  .streak{
+    position:absolute;top:0;width:1px;
+    background:linear-gradient(to bottom, transparent, rgba(233,228,218,.85) 40%, rgba(233,228,218,.4) 70%, transparent);
+    animation:drip linear infinite;
+  }
+  @keyframes drip{
+    0%{transform:translateY(-6px);}
+    50%{transform:translateY(8px);}
+    100%{transform:translateY(-6px);}
+  }
+
   .card{
     position:relative;z-index:2;
     text-align:center;
@@ -194,6 +215,7 @@
 <body>
   <div class="entity one"></div>
   <div class="entity two"></div>
+  <div class="streaks" id="streaks"></div>
   <div class="haze"></div>
   <div class="grain"></div>
   <div class="vignette"></div>
@@ -227,6 +249,36 @@
   const place = params.get('place');
   document.getElementById('guest').textContent = name ? decodeURIComponent(name) : 'Friend';
   if(place){ document.getElementById('place').textContent = decodeURIComponent(place); }
+
+  // disintegration streak field — generate fine vertical lines with varied
+  // length/position, revealed only in a soft pool that follows the cursor
+  const streaksEl = document.getElementById('streaks');
+  const STREAKS = 90;
+  for(let i=0;i<STREAKS;i++){
+    const s=document.createElement('div');
+    s.className='streak';
+    s.style.left=(6+Math.random()*88).toFixed(2)+'%';
+    s.style.top=(-6+Math.random()*34).toFixed(2)+'%';
+    s.style.height=(22+Math.random()*52).toFixed(1)+'vh';
+    s.style.opacity=(0.12+Math.random()*0.6).toFixed(2);
+    if(Math.random()<0.16) s.style.width='2px';
+    s.style.animationDuration=(6+Math.random()*9).toFixed(1)+'s';
+    s.style.animationDelay=(-Math.random()*10).toFixed(1)+'s';
+    streaksEl.appendChild(s);
+  }
+  let streakIdle, streakRaf;
+  function wakeStreaks(x,y){
+    if(streakRaf) return;
+    streakRaf=requestAnimationFrame(()=>{
+      streaksEl.style.setProperty('--mx', x+'px');
+      streaksEl.style.setProperty('--my', y+'px');
+      streaksEl.classList.add('awake');
+      streakRaf=null;
+    });
+    clearTimeout(streakIdle);
+    streakIdle=setTimeout(()=>streaksEl.classList.remove('awake'), 1800);
+  }
+  window.addEventListener('pointermove', e=>wakeStreaks(e.clientX,e.clientY), {passive:true});
 
   // animated, fragmenting title — one scalable SVG line, never wraps
   const word = 'DISINTEGRATION.';
