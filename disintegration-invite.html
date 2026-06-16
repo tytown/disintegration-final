@@ -80,24 +80,28 @@
     letter-spacing:.01em;
   }
 
+  /* wordmark as a single scalable line — never wraps, fits any width */
   .title{
-    font-weight:300;
-    letter-spacing:.5em;
-    font-size:clamp(1.5rem,5.5vw,2.6rem);
-    text-transform:uppercase;
-    color:var(--ink);
-    margin-left:.5em; /* offset the tracking */
+    display:block;
+    width:100%;
+    max-width:30rem;
+    height:auto;
+    margin:0 auto;
   }
-  .title .frag{
-    display:inline-block;
+  .title text{
+    fill:var(--ink);
+    font-family:'Cormorant',serif;
+    font-weight:300;
+  }
+  .title tspan{
     animation:flicker 7s ease-in-out infinite;
   }
-  .title .frag:nth-child(3n){animation-delay:1.3s;}
-  .title .frag:nth-child(4n){animation-delay:2.6s;}
+  .title tspan:nth-child(3n){animation-delay:1.3s;}
+  .title tspan:nth-child(4n){animation-delay:2.6s;}
   @keyframes flicker{
-    0%,100%{opacity:1;transform:translateY(0);}
+    0%,100%{opacity:1;}
     48%{opacity:1;}
-    52%{opacity:.45;transform:translateY(.5px);}
+    52%{opacity:.45;}
     56%{opacity:1;}
   }
 
@@ -143,7 +147,9 @@
     <div class="for-line">An invitation for</div>
     <div class="name" id="guest">—</div>
 
-    <div class="title" id="title"></div>
+    <svg class="title" viewBox="0 0 1400 160" preserveAspectRatio="xMidYMid meet" role="img" aria-label="DISINTEGRATION">
+      <text id="title" x="0" y="118" textLength="1400" lengthAdjust="spacing" font-size="110"></text>
+    </svg>
 
     <div class="rule"></div>
 
@@ -153,7 +159,7 @@
       <br>Seven o'clock in the evening
 
       <span class="label">Where</span>
-      <span id="place">[ address line ]</span>
+      <span id="place">7010 Windrift Way<br>Austin, TX 78745</span>
     </div>
 
     <div class="closing">The final performance.</div>
@@ -167,12 +173,12 @@
   document.getElementById('guest').textContent = name ? decodeURIComponent(name) : 'Friend';
   if(place){ document.getElementById('place').textContent = decodeURIComponent(place); }
 
-  // animated, fragmenting title
+  // animated, fragmenting title — one scalable SVG line, never wraps
   const word = 'DISINTEGRATION';
   const t = document.getElementById('title');
+  const SVGNS = 'http://www.w3.org/2000/svg';
   [...word].forEach(ch=>{
-    const s=document.createElement('span');
-    s.className='frag';
+    const s=document.createElementNS(SVGNS,'tspan');
     s.textContent=ch;
     t.appendChild(s);
   });
