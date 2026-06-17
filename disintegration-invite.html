@@ -410,8 +410,8 @@
       const mine = guestName && d.bookings && Object.keys(d.bookings)
         .find(s=>d.bookings[s].toLowerCase()===guestName.toLowerCase());
       statusEl.textContent = mine
-        ? 'You’re reserved for '+mine+'. Tap another hour to change it.'
-        : (guestName ? 'Choose the hour you’ll arrive.' : 'Open your personal invitation link to reserve.');
+        ? 'You’re reserved for '+mine+'. Tap another to change it.'
+        : (guestName ? 'RSVP open.' : 'Open your personal invitation link to reserve.');
       if(isReport) renderReport(d.bookings);
     }).catch(()=>{
       slotsEl.classList.remove('loading');
@@ -431,7 +431,7 @@
           statusEl.textContent='You’re set for '+time+'. See you then.';
         }else if(d.reason==='taken'){
           paint(d.bookings);
-          statusEl.textContent='That hour was just taken — choose another.';
+          statusEl.textContent='That time was just taken — choose another.';
         }else{
           statusEl.textContent='Something went wrong. Try again.';
         }
@@ -459,7 +459,7 @@
       rows.appendChild(row);
     });
     const taken=Object.keys(bookings).length;
-    statusEl.textContent=taken+' of '+SLOT_TIMES.length+' hours reserved.';
+    statusEl.textContent=taken+' of '+SLOT_TIMES.length+' times reserved.';
   }
 
   if(ready){
