@@ -15,6 +15,9 @@ function doGet(e) {
   if (action === 'rsvp') {
     return handleRsvp(e.parameter.name, e.parameter.slot);
   }
+  if (action === 'cancel') {
+    return handleCancel(e.parameter.name);
+  }
   return json(listBookings());
 }
 
@@ -84,6 +87,32 @@ function handleRsvp(name, slot) {
     sh.getRange(row, 2).setValue(name);
     sh.getRange(row, 3).setValue(now);
     return json({ ok: true, slot: slot, name: name, bookings: listBookings().bookings });
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function handleCancel(name) {
+  name = String(name || '').trim();
+  if (!name) return json({ ok: false, reason: 'invalid' });
+
+  var lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(10000);
+  } catch (err) {
+    return json({ ok: false, reason: 'busy' });
+  }
+
+  try {
+    var sh = getSheet();
+    var rows = sh.getDataRange().getValues();
+    // delete bottom-up so row indices stay valid
+    for (var i = rows.length - 1; i >= 1; i--) {
+      if (String(rows[i][1]).trim().toLowerCase() === name.toLowerCase()) {
+        sh.deleteRow(i + 1);
+      }
+    }
+    return json({ ok: true, cancelled: true, bookings: listBookings().bookings });
   } finally {
     lock.releaseLock();
   }

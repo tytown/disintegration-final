@@ -244,9 +244,10 @@
   }
   .slot.mine{
     color:var(--bg);background:var(--ink);border-color:var(--ink);
-    text-decoration:none;opacity:1;cursor:default;
+    text-decoration:none;opacity:1;cursor:pointer;
     box-shadow:0 0 26px rgba(233,228,218,.18);
   }
+  .slot.mine:hover{ box-shadow:0 0 30px rgba(233,228,218,.28); }
   .slots.loading{opacity:.4;pointer-events:none;}
   .rsvp-status{
     margin-top:1.2rem;min-height:1.3em;
@@ -285,7 +286,7 @@
     <div class="name" id="guest">—</div>
 
     <svg class="title" viewBox="0 0 1400 160" preserveAspectRatio="xMidYMid meet" role="img" aria-label="DISINTEGRATION.">
-      <text id="title" x="0" y="118" textLength="1400" lengthAdjust="spacing" font-size="110"></text>
+      <text id="title" x="700" y="118" text-anchor="middle" textLength="1400" lengthAdjust="spacing" font-size="110"></text>
     </svg>
 
     <div class="rule"></div>
@@ -376,7 +377,7 @@
   SLOT_TIMES.forEach(time=>{
     const b=document.createElement('button');
     b.className='slot'; b.type='button'; b.textContent=time; b.disabled=true;
-    b.addEventListener('click',()=>claim(time));
+    b.addEventListener('click',()=>{ b.classList.contains('mine') ? cancel() : claim(time); });
     slotsEl.appendChild(b);
     slotEls[time]=b;
   });
@@ -390,7 +391,7 @@
       b.disabled=false;
       if(owner){
         if(guestName && owner.toLowerCase()===guestName.toLowerCase()){
-          b.classList.add('mine'); b.disabled=true;
+          b.classList.add('mine'); // stays tappable so it can be released
         }else{
           b.classList.add('taken'); b.disabled=true;
         }
@@ -410,7 +411,7 @@
       const mine = guestName && d.bookings && Object.keys(d.bookings)
         .find(s=>d.bookings[s].toLowerCase()===guestName.toLowerCase());
       statusEl.textContent = mine
-        ? 'You’re reserved for '+mine+'. Tap another to change it.'
+        ? 'You’re reserved for '+mine+'. Tap it again to cancel, or another to change it.'
         : (guestName ? 'RSVP open.' : 'Open your personal invitation link to reserve.');
       if(isReport) renderReport(d.bookings);
     }).catch(()=>{
@@ -428,7 +429,7 @@
         slotsEl.classList.remove('loading');
         if(d.ok){
           paint(d.bookings);
-          statusEl.textContent='You’re set for '+time+'. See you then.';
+          statusEl.textContent='You’re set for '+time+'. Tap it again to cancel.';
         }else if(d.reason==='taken'){
           paint(d.bookings);
           statusEl.textContent='That time was just taken — choose another.';
@@ -439,6 +440,26 @@
       }).catch(()=>{
         slotsEl.classList.remove('loading');
         statusEl.textContent='Couldn’t save that. Refresh and try again.';
+      });
+  }
+
+  function cancel(){
+    if(!guestName) return;
+    slotsEl.classList.add('loading');
+    statusEl.textContent='Releasing your time…';
+    api('?action=cancel&name='+encodeURIComponent(guestName))
+      .then(d=>{
+        slotsEl.classList.remove('loading');
+        if(d.ok && d.cancelled){
+          paint(d.bookings);
+          statusEl.textContent='Reservation released — RSVP open.';
+        }else{
+          statusEl.textContent='Couldn’t release that. Try again.';
+        }
+        if(isReport) renderReport(d.bookings);
+      }).catch(()=>{
+        slotsEl.classList.remove('loading');
+        statusEl.textContent='Couldn’t release that. Refresh and try again.';
       });
   }
 
