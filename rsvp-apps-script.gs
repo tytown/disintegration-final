@@ -26,14 +26,25 @@ function getSheet() {
     sh.appendRow(['Slot', 'Name', 'Reserved at']);
     sh.setFrozenRows(1);
   }
+  sh.getRange('A1:A').setNumberFormat('@'); // keep Slot column as plain text
   return sh;
+}
+
+// Slots can come back from the sheet as a Date if a cell was ever time-typed;
+// normalise everything to "H:MM".
+function slotStr(v) {
+  if (v instanceof Date) {
+    var h = v.getHours(), m = v.getMinutes();
+    return h + ':' + (m < 10 ? '0' + m : m);
+  }
+  return String(v).trim();
 }
 
 function listBookings() {
   var rows = getSheet().getDataRange().getValues();
   var bookings = {};
   for (var i = 1; i < rows.length; i++) {
-    var slot = String(rows[i][0]).trim();
+    var slot = slotStr(rows[i][0]);
     var nm = String(rows[i][1]).trim();
     if (slot && nm) bookings[slot] = nm;
   }
@@ -59,23 +70,19 @@ function handleRsvp(name, slot) {
     var rows = sh.getDataRange().getValues();
     var myRow = -1, slotOwner = '';
     for (var i = 1; i < rows.length; i++) {
-      if (String(rows[i][0]).trim() === slot) slotOwner = String(rows[i][1]).trim();
+      if (slotStr(rows[i][0]) === slot) slotOwner = String(rows[i][1]).trim();
       if (String(rows[i][1]).trim().toLowerCase() === name.toLowerCase()) myRow = i;
     }
 
-    // Slot already held by someone else → reject.
     if (slotOwner && slotOwner.toLowerCase() !== name.toLowerCase()) {
       return json({ ok: false, reason: 'taken', bookings: listBookings().bookings });
     }
 
     var now = new Date();
-    if (myRow > -1) {
-      // Guest already in the sheet — move them to the new slot.
-      sh.getRange(myRow + 1, 1).setValue(slot);
-      sh.getRange(myRow + 1, 3).setValue(now);
-    } else {
-      sh.appendRow([slot, name, now]);
-    }
+    var row = (myRow > -1) ? (myRow + 1) : (sh.getLastRow() + 1);
+    sh.getRange(row, 1).setNumberFormat('@').setValue(slot); // force text "9:40"
+    sh.getRange(row, 2).setValue(name);
+    sh.getRange(row, 3).setValue(now);
     return json({ ok: true, slot: slot, name: name, bookings: listBookings().bookings });
   } finally {
     lock.releaseLock();
