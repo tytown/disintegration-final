@@ -299,7 +299,7 @@
     </div>
 
     <div class="rsvp" id="rsvp">
-      <span class="label">Reserve your hour</span>
+      <span class="label">Reserve your immersion</span>
       <div class="slots loading" id="slots"></div>
       <div class="rsvp-status" id="rsvpStatus">Loading the hours…</div>
     </div>
@@ -466,7 +466,7 @@
   }else{
     slotsEl.classList.remove('loading');
     Object.values(slotEls).forEach(b=>b.disabled=true);
-    statusEl.textContent='RSVP opens shortly.';
+    statusEl.textContent='RSVP open.';
   }
 </script>
 </body>
