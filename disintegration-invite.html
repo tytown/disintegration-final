@@ -137,29 +137,32 @@
     letter-spacing:.01em;
   }
 
-  /* wordmark as a single scalable line — never wraps, big on desktop, smaller on phone */
+  /* wordmark — one centered line, scales down on phone, never wraps.
+     Plain centered HTML text: reliably centered on every browser. */
   .title{
-    display:block;
-    width:100%;
-    max-width:36rem;
-    height:auto;
+    font-family:'Cormorant',serif;
+    font-weight:300;
+    text-transform:uppercase;
+    white-space:nowrap;
+    text-align:center;
+    color:var(--ink);
+    font-size:clamp(1.15rem,6vw,2.8rem);
+    letter-spacing:.14em;
+    text-indent:.14em; /* offset trailing letter-spacing so glyphs sit centered */
+    line-height:1;
     margin:0 auto;
     animation:glitch 17s linear infinite;
   }
-  .title text{
-    fill:var(--ink);
-    font-family:'Cormorant',serif;
-    font-weight:300;
-  }
   /* per-letter sudden dropouts — staggered so they fire at different moments */
-  .title tspan{
+  .title .frag{
+    display:inline-block;
     animation:flicker 11s linear infinite;
   }
-  .title tspan:nth-child(2n){animation-delay:2.3s;}
-  .title tspan:nth-child(3n){animation-delay:5.1s;}
-  .title tspan:nth-child(4n){animation-delay:7.6s;}
-  .title tspan:nth-child(5n){animation-delay:3.4s;}
-  .title tspan:nth-child(7n){animation-delay:9.2s;}
+  .title .frag:nth-child(2n){animation-delay:2.3s;}
+  .title .frag:nth-child(3n){animation-delay:5.1s;}
+  .title .frag:nth-child(4n){animation-delay:7.6s;}
+  .title .frag:nth-child(5n){animation-delay:3.4s;}
+  .title .frag:nth-child(7n){animation-delay:9.2s;}
   @keyframes flicker{
     /* almost always solid — a single, faint, staggered dip per letter */
     0%,100%{opacity:1;}
@@ -285,9 +288,7 @@
     <div class="for-line">An invitation for</div>
     <div class="name" id="guest">—</div>
 
-    <svg class="title" viewBox="0 0 1400 160" preserveAspectRatio="xMidYMid meet" role="img" aria-label="DISINTEGRATION.">
-      <text id="title" x="700" y="118" text-anchor="middle" textLength="1400" lengthAdjust="spacing" font-size="110"></text>
-    </svg>
+    <div class="title" id="title" role="img" aria-label="DISINTEGRATION."></div>
 
     <div class="rule"></div>
 
@@ -352,12 +353,12 @@
   }
   window.addEventListener('pointermove', e=>wakeStreaks(e.clientX,e.clientY), {passive:true});
 
-  // animated, fragmenting title — one scalable SVG line, never wraps
+  // animated, fragmenting title — one centered line of per-letter spans
   const word = 'DISINTEGRATION.';
   const t = document.getElementById('title');
-  const SVGNS = 'http://www.w3.org/2000/svg';
   [...word].forEach(ch=>{
-    const s=document.createElementNS(SVGNS,'tspan');
+    const s=document.createElement('span');
+    s.className='frag';
     s.textContent=ch;
     t.appendChild(s);
   });
