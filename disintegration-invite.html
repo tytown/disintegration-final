@@ -210,6 +210,65 @@
     color:var(--ink-faint);
     letter-spacing:.08em;
   }
+
+  /* RSVP — claim an hour */
+  .rsvp{ margin-top:2.8rem; }
+  .rsvp .label{
+    display:block;
+    font-size:.66rem;letter-spacing:.34em;text-transform:uppercase;
+    color:var(--ink-faint);margin-bottom:1.1rem;
+  }
+  .slots{
+    display:flex;flex-wrap:wrap;justify-content:center;gap:.5rem;
+    max-width:24rem;margin:0 auto;
+  }
+  .slot{
+    font-family:'Cormorant Garamond',serif;
+    font-size:1.05rem;letter-spacing:.1em;font-weight:300;
+    color:var(--ink-dim);
+    background:transparent;
+    border:1px solid var(--ink-faint);
+    border-radius:2px;
+    padding:.46rem .8rem;
+    cursor:pointer;
+    transition:color .4s ease,border-color .4s ease,background .4s ease,box-shadow .4s ease,opacity .4s ease;
+  }
+  .slot:hover:not(.taken):not(.mine):not([disabled]){
+    color:var(--ink);border-color:var(--ink-dim);
+    box-shadow:0 0 20px rgba(233,228,218,.09);
+  }
+  .slot.taken{
+    color:var(--ink-faint);border-color:#26241f;
+    text-decoration:line-through;opacity:.5;cursor:not-allowed;
+  }
+  .slot.mine{
+    color:var(--bg);background:var(--ink);border-color:var(--ink);
+    text-decoration:none;opacity:1;cursor:default;
+    box-shadow:0 0 26px rgba(233,228,218,.18);
+  }
+  .slots.loading{opacity:.4;pointer-events:none;}
+  .rsvp-status{
+    margin-top:1.2rem;min-height:1.3em;
+    font-style:italic;font-size:.98rem;letter-spacing:.06em;
+    color:var(--ink-dim);
+  }
+  /* host report (?report=1) */
+  .report{
+    margin-top:2.4rem;text-align:left;max-width:24rem;
+    margin-left:auto;margin-right:auto;
+    color:var(--ink-dim);font-size:1.02rem;letter-spacing:.06em;
+  }
+  .report .label{
+    display:block;text-align:center;
+    font-size:.66rem;letter-spacing:.34em;text-transform:uppercase;
+    color:var(--ink-faint);margin-bottom:1rem;
+  }
+  .report .row{
+    display:flex;justify-content:space-between;gap:1rem;
+    padding:.4rem 0;border-bottom:1px solid #1a1813;
+  }
+  .report .row .who{color:var(--ink);}
+  .report .row .open{color:var(--ink-faint);font-style:italic;}
 </style>
 </head>
 <body>
@@ -237,6 +296,17 @@
 
       <span class="label">Where</span>
       <span id="place">7010 Windrift Way<br>Austin, TX 78745</span>
+    </div>
+
+    <div class="rsvp" id="rsvp">
+      <span class="label">Reserve your hour</span>
+      <div class="slots loading" id="slots"></div>
+      <div class="rsvp-status" id="rsvpStatus">Loading the hours…</div>
+    </div>
+
+    <div class="report" id="report" style="display:none">
+      <span class="label">RSVP report</span>
+      <div id="reportRows"></div>
     </div>
 
     <div class="closing">The final performance.</div>
@@ -289,6 +359,115 @@
     s.textContent=ch;
     t.appendChild(s);
   });
+
+  // ---- RSVP ----------------------------------------------------------------
+  // After deploying the Apps Script web app, paste its /exec URL below.
+  const RSVP_ENDPOINT = '__RSVP_ENDPOINT__';
+  const SLOT_TIMES = ['7:00','7:20','7:40','8:00','8:20','8:40','9:00','9:20','9:40'];
+
+  const slotsEl   = document.getElementById('slots');
+  const statusEl  = document.getElementById('rsvpStatus');
+  const guestName = name ? decodeURIComponent(name) : '';
+  const ready     = RSVP_ENDPOINT.indexOf('http') === 0;
+
+  // Build the nine slot buttons (disabled until we know what's taken).
+  const slotEls = {};
+  SLOT_TIMES.forEach(time=>{
+    const b=document.createElement('button');
+    b.className='slot'; b.type='button'; b.textContent=time; b.disabled=true;
+    b.addEventListener('click',()=>claim(time));
+    slotsEl.appendChild(b);
+    slotEls[time]=b;
+  });
+
+  function paint(bookings){
+    bookings = bookings || {};
+    SLOT_TIMES.forEach(time=>{
+      const b=slotEls[time];
+      const owner=bookings[time];
+      b.classList.remove('taken','mine');
+      b.disabled=false;
+      if(owner){
+        if(guestName && owner.toLowerCase()===guestName.toLowerCase()){
+          b.classList.add('mine'); b.disabled=true;
+        }else{
+          b.classList.add('taken'); b.disabled=true;
+        }
+      }
+    });
+  }
+
+  function api(qs){
+    return fetch(RSVP_ENDPOINT+qs,{method:'GET'}).then(r=>r.json());
+  }
+
+  function load(){
+    slotsEl.classList.add('loading');
+    api('?action=list').then(d=>{
+      slotsEl.classList.remove('loading');
+      paint(d.bookings);
+      const mine = guestName && d.bookings && Object.keys(d.bookings)
+        .find(s=>d.bookings[s].toLowerCase()===guestName.toLowerCase());
+      statusEl.textContent = mine
+        ? 'You’re reserved for '+mine+'. Tap another hour to change it.'
+        : (guestName ? 'Choose the hour you’ll arrive.' : 'Open your personal invitation link to reserve.');
+      if(isReport) renderReport(d.bookings);
+    }).catch(()=>{
+      slotsEl.classList.remove('loading');
+      statusEl.textContent='Couldn’t reach the guest list. Refresh to try again.';
+    });
+  }
+
+  function claim(time){
+    if(!guestName){ statusEl.textContent='Open your personal invitation link to reserve.'; return; }
+    slotsEl.classList.add('loading');
+    statusEl.textContent='Reserving '+time+'…';
+    api('?action=rsvp&name='+encodeURIComponent(guestName)+'&slot='+encodeURIComponent(time))
+      .then(d=>{
+        slotsEl.classList.remove('loading');
+        if(d.ok){
+          paint(d.bookings);
+          statusEl.textContent='You’re set for '+time+'. See you then.';
+        }else if(d.reason==='taken'){
+          paint(d.bookings);
+          statusEl.textContent='That hour was just taken — choose another.';
+        }else{
+          statusEl.textContent='Something went wrong. Try again.';
+        }
+        if(isReport) renderReport(d.bookings);
+      }).catch(()=>{
+        slotsEl.classList.remove('loading');
+        statusEl.textContent='Couldn’t save that. Refresh and try again.';
+      });
+  }
+
+  // Host report view: open any link with ?report=1
+  const isReport = params.get('report')==='1' || params.get('report')==='true';
+  function renderReport(bookings){
+    bookings=bookings||{};
+    const wrap=document.getElementById('report');
+    const rows=document.getElementById('reportRows');
+    wrap.style.display='block';
+    rows.innerHTML='';
+    SLOT_TIMES.forEach(time=>{
+      const owner=bookings[time];
+      const row=document.createElement('div'); row.className='row';
+      row.innerHTML='<span>'+time+'</span>'+(owner
+        ? '<span class="who">'+owner.replace(/[<>&]/g,'')+'</span>'
+        : '<span class="open">open</span>');
+      rows.appendChild(row);
+    });
+    const taken=Object.keys(bookings).length;
+    statusEl.textContent=taken+' of '+SLOT_TIMES.length+' hours reserved.';
+  }
+
+  if(ready){
+    load();
+  }else{
+    slotsEl.classList.remove('loading');
+    Object.values(slotEls).forEach(b=>b.disabled=true);
+    statusEl.textContent='RSVP opens shortly.';
+  }
 </script>
 </body>
 </html>
