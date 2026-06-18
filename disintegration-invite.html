@@ -257,6 +257,17 @@
     font-style:italic;font-size:.98rem;letter-spacing:.06em;
     color:var(--ink-dim);
   }
+  .decline{
+    display:inline-block;margin-top:1.1rem;
+    background:transparent;border:none;padding:.2rem 0;
+    font-family:'Cormorant Garamond',serif;font-style:italic;
+    font-size:.95rem;letter-spacing:.08em;
+    color:var(--ink-faint);cursor:pointer;
+    border-bottom:1px solid transparent;
+    transition:color .4s ease,border-color .4s ease;
+  }
+  .decline:hover{ color:var(--ink-dim);border-bottom-color:var(--ink-faint); }
+  .decline.active{ color:var(--ink-dim);border-bottom-color:var(--ink-dim);font-style:normal; }
   /* host report (?report=1) */
   .report{
     margin-top:2.4rem;text-align:left;max-width:24rem;
@@ -274,6 +285,10 @@
   }
   .report .row .who{color:var(--ink);}
   .report .row .open{color:var(--ink-faint);font-style:italic;}
+  .report .declined{
+    margin-top:1.1rem;font-size:.95rem;font-style:italic;color:var(--ink-faint);
+  }
+  .report .declined b{color:var(--ink-dim);font-style:normal;font-weight:400;}
 </style>
 </head>
 <body>
@@ -305,6 +320,7 @@
       <span class="label">Reserve your immersion</span>
       <div class="slots loading" id="slots"></div>
       <div class="rsvp-status" id="rsvpStatus">Loading the hours…</div>
+      <button class="decline" id="declineBtn" type="button">Can’t make it</button>
     </div>
 
     <div class="report" id="report" style="display:none">
@@ -368,10 +384,11 @@
   const RSVP_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzE2YMgegf3CrP_9ZloueH0Pi0iZS-wNYZYRJk2vY-ONc6Mz4RI-FhXyXIemQECkRmryA/exec';
   const SLOT_TIMES = ['7:00','7:20','7:40','8:00','8:20','8:40','9:00','9:20','9:40'];
 
-  const slotsEl   = document.getElementById('slots');
-  const statusEl  = document.getElementById('rsvpStatus');
-  const guestName = name ? decodeURIComponent(name) : '';
-  const ready     = RSVP_ENDPOINT.indexOf('http') === 0;
+  const slotsEl    = document.getElementById('slots');
+  const statusEl   = document.getElementById('rsvpStatus');
+  const declineBtn = document.getElementById('declineBtn');
+  const guestName  = name ? decodeURIComponent(name) : '';
+  const ready      = RSVP_ENDPOINT.indexOf('http') === 0;
 
   // Build the nine slot buttons (disabled until we know what's taken).
   const slotEls = {};
@@ -400,6 +417,18 @@
     });
   }
 
+  function isDeclined(declined){
+    return guestName && Array.isArray(declined)
+      && declined.some(n=>String(n).toLowerCase()===guestName.toLowerCase());
+  }
+  // paint slots + reflect whether this guest has declined
+  function paintAll(bookings, declined){
+    paint(bookings);
+    const dec = isDeclined(declined);
+    declineBtn.classList.toggle('active', dec);
+    return dec;
+  }
+
   function api(qs){
     return fetch(RSVP_ENDPOINT+qs,{method:'GET'}).then(r=>r.json());
   }
@@ -408,13 +437,15 @@
     slotsEl.classList.add('loading');
     api('?action=list').then(d=>{
       slotsEl.classList.remove('loading');
-      paint(d.bookings);
+      const dec = paintAll(d.bookings, d.declined);
       const mine = guestName && d.bookings && Object.keys(d.bookings)
         .find(s=>d.bookings[s].toLowerCase()===guestName.toLowerCase());
       statusEl.textContent = mine
         ? 'You’re reserved for '+mine+'. Tap it again to cancel, or another to change it.'
-        : (guestName ? 'RSVP open.' : 'Open your personal invitation link to reserve.');
-      if(isReport) renderReport(d.bookings);
+        : dec
+          ? 'You’ve let them know you can’t make it. Pick a time above if that changes.'
+          : (guestName ? 'RSVP open.' : 'Open your personal invitation link to reserve.');
+      if(isReport) renderReport(d.bookings, d.declined);
     }).catch(()=>{
       slotsEl.classList.remove('loading');
       statusEl.textContent='Couldn’t reach the guest list. Refresh to try again.';
@@ -429,15 +460,15 @@
       .then(d=>{
         slotsEl.classList.remove('loading');
         if(d.ok){
-          paint(d.bookings);
+          paintAll(d.bookings, d.declined);
           statusEl.textContent='You’re set for '+time+'. Tap it again to cancel.';
         }else if(d.reason==='taken'){
-          paint(d.bookings);
+          paintAll(d.bookings, d.declined);
           statusEl.textContent='That time was just taken — choose another.';
         }else{
           statusEl.textContent='Something went wrong. Try again.';
         }
-        if(isReport) renderReport(d.bookings);
+        if(isReport) renderReport(d.bookings, d.declined);
       }).catch(()=>{
         slotsEl.classList.remove('loading');
         statusEl.textContent='Couldn’t save that. Refresh and try again.';
@@ -452,22 +483,44 @@
       .then(d=>{
         slotsEl.classList.remove('loading');
         if(d.ok && d.cancelled){
-          paint(d.bookings);
+          paintAll(d.bookings, d.declined);
           statusEl.textContent='Reservation released — RSVP open.';
         }else{
           statusEl.textContent='Couldn’t release that. Try again.';
         }
-        if(isReport) renderReport(d.bookings);
+        if(isReport) renderReport(d.bookings, d.declined);
       }).catch(()=>{
         slotsEl.classList.remove('loading');
         statusEl.textContent='Couldn’t release that. Refresh and try again.';
       });
   }
 
+  function decline(){
+    if(!guestName){ statusEl.textContent='Open your personal invitation link to RSVP.'; return; }
+    slotsEl.classList.add('loading');
+    statusEl.textContent='Sending your regrets…';
+    api('?action=decline&name='+encodeURIComponent(guestName))
+      .then(d=>{
+        slotsEl.classList.remove('loading');
+        if(d.ok && d.didDecline){
+          paintAll(d.bookings, d.declined);
+          statusEl.textContent='You’ve let them know you can’t make it. Pick a time above if that changes.';
+        }else{
+          statusEl.textContent='Couldn’t send that. Try again.';
+        }
+        if(isReport) renderReport(d.bookings, d.declined);
+      }).catch(()=>{
+        slotsEl.classList.remove('loading');
+        statusEl.textContent='Couldn’t send that. Refresh and try again.';
+      });
+  }
+  declineBtn.addEventListener('click', decline);
+
   // Host report view: open any link with ?report=1
   const isReport = params.get('report')==='1' || params.get('report')==='true';
-  function renderReport(bookings){
-    bookings=bookings||{};
+  function renderReport(bookings, declined){
+    bookings=bookings||{}; declined=Array.isArray(declined)?declined:[];
+    const clean=s=>String(s).replace(/[<>&]/g,'');
     const wrap=document.getElementById('report');
     const rows=document.getElementById('reportRows');
     wrap.style.display='block';
@@ -476,12 +529,18 @@
       const owner=bookings[time];
       const row=document.createElement('div'); row.className='row';
       row.innerHTML='<span>'+time+'</span>'+(owner
-        ? '<span class="who">'+owner.replace(/[<>&]/g,'')+'</span>'
+        ? '<span class="who">'+clean(owner)+'</span>'
         : '<span class="open">open</span>');
       rows.appendChild(row);
     });
+    if(declined.length){
+      const d=document.createElement('div'); d.className='declined';
+      d.innerHTML='Declined: <b>'+declined.map(clean).join(', ')+'</b>';
+      rows.appendChild(d);
+    }
     const taken=Object.keys(bookings).length;
-    statusEl.textContent=taken+' of '+SLOT_TIMES.length+' times reserved.';
+    statusEl.textContent=taken+' of '+SLOT_TIMES.length+' times reserved'
+      +(declined.length?' · '+declined.length+' declined':'')+'.';
   }
 
   if(ready){
